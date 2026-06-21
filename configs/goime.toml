@@ -1,0 +1,28 @@
+[general]
+log_level = "info"          # 日志级别: debug/info/warn/error
+socket_path = ""            # Unix socket 路径，留空自动推导
+idle_timeout = "15m"        # 空闲超时，如 "15m"
+
+[scheme]
+active = "xiaohe"           # 默认输入方案
+dir = ""                    # 方案文件目录，留空使用内置方案
+
+[dict]
+static = []                 # 静态词库文件列表
+user = ""                   # 用户词库 SQLite 路径
+sync_file = ""              # 用户词库纯文本同步文件
+build_dir = ""              # 二进制索引构建目录
+auto_build = true           # 自动构建开关
+
+[candidates]
+page_size = 5               # 每页候选数
+max_candidates = 100        # 最大候选数
+
+[translator]
+max_syllables = 8           # 最大匹配音节数
+
+[user_dict]
+enabled = true              # 启用用户词库
+freq_decay = true           # 启用词频衰减
+decay_rate = 0.99           # 衰减率
+new_word_weight = 100       # 新自造词初始权重

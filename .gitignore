@@ -1,0 +1,10 @@
+*.swp
+/goimed
+/goime-dict
+/goimec
+.cache/
+.user_dict.*
+dist/
+_*
+!docs/
+
