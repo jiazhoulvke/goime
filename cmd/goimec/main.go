@@ -241,5 +241,6 @@ Flags:
   2. ~/.config/goime/goime.toml 中的 socket_path
   3. 当前目录的 .goime.sock
   4. $XDG_RUNTIME_DIR/goime.sock
-  5. /tmp/goime-$UID.sock`)
+  5. $TMPDIR/goime-$UID.sock
+  6. /tmp/goime-$UID.sock`)
 }
