@@ -159,6 +159,10 @@ func candidatePaths() []string {
 	if runtimeDir != "" {
 		paths = append(paths, filepath.Join(runtimeDir, "goime.sock"))
 	}
+	// $TMPDIR/goime-$UID.sock (Termux 等)
+	if tmpDir := os.Getenv("TMPDIR"); tmpDir != "" {
+		paths = append(paths, filepath.Join(tmpDir, "goime-"+strconv.Itoa(os.Getuid())+".sock"))
+	}
 	// /tmp/goime-$UID.sock
 	paths = append(paths, filepath.Join("/tmp", "goime-"+strconv.Itoa(os.Getuid())+".sock"))
 	return paths

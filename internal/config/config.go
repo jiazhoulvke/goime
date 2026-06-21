@@ -148,5 +148,9 @@ func (c *Config) SocketPath() string {
 	if runtimeDir != "" {
 		return runtimeDir + "/goime.sock"
 	}
+	// Termux 等环境使用 $TMPDIR
+	if tmpDir := os.Getenv("TMPDIR"); tmpDir != "" {
+		return tmpDir + "/goime-" + strconv.Itoa(os.Getuid()) + ".sock"
+	}
 	return "/tmp/goime-" + strconv.Itoa(os.Getuid()) + ".sock"
 }
