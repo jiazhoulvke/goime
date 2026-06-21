@@ -6,36 +6,22 @@ GoIME 是一个基于 Go 语言实现的服务端中文输入法引擎。通过 
 
 ## 架构
 
-```
-┌──────────────────────────────────────────────┐
-│                goimed (守护进程)               │
-│                                              │
-│  ┌────────────┐    ┌──────────────────────┐  │
-│  │ Unix Socket│───►│   Session Manager    │  │
-│  │  Listener  │    │  (每个连接一个Session) │  │
-│  └────────────┘    └──────────┬───────────┘  │
-│                               ▼              │
-│  ┌────────────────────────────────────────┐  │
-│  │          Input Engine                  │  │
-│  │  ┌──────────┐ ┌──────────┐ ┌────────┐ │  │
-│  │  │ Speller  │►│Segmentor │►│Trans-  │ │  │
-│  │  │(双拼/全拼)│ │(分词)    │ │lator   │ │  │
-│  │  └──────────┘ └──────────┘ └───┬────┘ │  │
-│  └────────────────────────────────┼────────┘  │
-│                                   ▼           │
-│  ┌────────────────────────────────────────┐  │
-│  │          Dictionary Engine             │  │
-│  │  ┌─────────────────┐ ┌──────────────┐  │  │
-│  │  │   Static Dict   │ │  User Dict   │  │  │
-│  │  │  (mmap Trie)    │ │  (SQLite)    │  │  │
-│  │  └─────────────────┘ └──────────────┘  │  │
-│  └────────────────────────────────────────┘  │
-│                                              │
-│  ┌────────────────────────────────────────┐  │
-│  │       Config Manager                   │  │
-│  │  (TOML: 方案/词典/用户设置)            │  │
-│  └────────────────────────────────────────┘  │
-└──────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Socket["Unix Socket Listener"]
+    Session["Session Manager"]
+    Speller["Speller (双拼/全拼)"]
+    Seg["Segmentor (分词)"]
+    Trans["Translator"]
+    Static["Static Dict (mmap)"]
+    User["User Dict (SQLite)"]
+    Config["Config Manager (TOML)"]
+
+    Socket --> Session
+    Session --> Speller
+    Speller --> Seg --> Trans
+    Trans --> Static
+    Trans --> User
 ```
 
 ## 安装
