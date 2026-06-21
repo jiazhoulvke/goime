@@ -2,7 +2,6 @@ package dict
 
 import (
 	"encoding/binary"
-	"syscall"
 )
 
 // Entry represents a single dictionary entry.
@@ -17,9 +16,10 @@ type Entry struct {
 //   - mmap 模式：refs + mapped，词条懒解析
 //   - 内存模式：data，词条预加载到 map（用于 Merge 结果）
 type Index struct {
-	data   map[string][]Entry // 内存模式（Merge 后使用）
-	mapped []byte             // mmap 映射数据
-	refs   map[string]entryRef // mmap 偏移索引
+	data   map[string][]Entry  // 内存模式（Merge 后使用）
+	mapped []byte             // mmap 映射数据（Unix）或 ReadFile 数据（其他平台）
+	refs   map[string]entryRef // 偏移索引
+	mmaped bool                // mapped 来自 syscall.Mmap
 }
 
 // NewIndex 创建一个空的 Index（内存模式）
@@ -133,12 +133,4 @@ func (idx *Index) getEntries(key string, ref entryRef) []Entry {
 		entries = append(entries, Entry{Pinyin: key, Text: text, Weight: weight})
 	}
 	return entries
-}
-
-// Close 释放 mmap 内存
-func (idx *Index) Close() {
-	if idx.mapped != nil {
-		syscall.Munmap(idx.mapped)
-		idx.mapped = nil
-	}
 }
