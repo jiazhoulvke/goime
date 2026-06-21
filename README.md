@@ -13,9 +13,8 @@ flowchart TD
     Speller["Speller (双拼/全拼)"]
     Seg["Segmentor (分词)"]
     Trans["Translator"]
-    Static["Static Dict (mmap)"]
+    Static["Static Dict (mmap Trie)"]
     User["User Dict (SQLite)"]
-    Config["Config Manager (TOML)"]
 
     Socket --> Session
     Session --> Speller
