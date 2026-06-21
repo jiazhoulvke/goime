@@ -37,7 +37,6 @@ flowchart TD
 | `goime-<version>-linux_armv7.tar.gz` | Linux | ARMv7（树莓派 3 等） |
 | `goime-<version>-darwin_amd64.tar.gz` | macOS | Intel |
 | `goime-<version>-darwin_arm64.tar.gz` | macOS | Apple Silicon |
-| `goime-<version>-windows_amd64.zip` | Windows | x86_64 |
 | `goime-<version>-freebsd_amd64.tar.gz` | FreeBSD | x86_64 |
 
 每个包内包含：
