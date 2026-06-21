@@ -29,9 +29,34 @@ flowchart TD
 
 从 [Releases](https://github.com/jiazhoulvke/goime/releases) 下载对应平台的压缩包，解压后得到三个可执行文件：
 
+| 文件 | 平台 | 架构 |
+|------|------|------|
+| `goime-<version>-linux_amd64.tar.gz` | Linux | x86_64 |
+| `goime-<version>-linux_arm64.tar.gz` | Linux | ARM64（树莓派等） |
+| `goime-<version>-linux_armv6.tar.gz` | Linux | ARMv6（树莓派 Zero 等） |
+| `goime-<version>-linux_armv7.tar.gz` | Linux | ARMv7（树莓派 3 等） |
+| `goime-<version>-darwin_amd64.tar.gz` | macOS | Intel |
+| `goime-<version>-darwin_arm64.tar.gz` | macOS | Apple Silicon |
+| `goime-<version>-windows_amd64.zip` | Windows | x86_64 |
+| `goime-<version>-freebsd_amd64.tar.gz` | FreeBSD | x86_64 |
+
+每个包内包含：
+
 - `goimed` — 守护进程
 - `goime-dict` — 词库构建工具
 - `goimec` — 命令行测试工具
+- `LICENSE` — GPLv3
+- `README.md` — 本文件
+
+校验：
+
+```bash
+# 下载校验和文件
+curl -LO https://github.com/jiazhoulvke/goime/releases/download/v0.2.0/goime_v0.2.0_checksums.txt
+
+# 验证压缩包
+sha256sum -c goime_v0.2.0_checksums.txt 2>/dev/null | grep OK
+```
 
 ### 从源码安装
 
