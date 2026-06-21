@@ -19,25 +19,9 @@ builds:
       - darwin
       - freebsd
       - openbsd
-      - windows
     goarch:
       - amd64
       - arm64
-      - "386"
-    goarm:
-      - "5"
-      - "6"
-      - "7"
-    ignore:
-      - goos: darwin
-        goarch: "386"
-      - goos: freebsd
-        goarch: "386"
-      - goos: openbsd
-        goarch: "386"
-      - goos: windows
-        goarch: "386"
-    # 使用构建时间和 git 信息填充版本
     ldflags:
       - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
 
