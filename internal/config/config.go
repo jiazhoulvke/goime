@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 
 	"github.com/BurntSushi/toml"
@@ -24,6 +25,9 @@ type GeneralConfig struct {
 	LogLevel    string `toml:"log_level"`    // 日志级别: debug/info/warn/error
 	SocketPath  string `toml:"socket_path"`  // Unix socket 路径，留空自动推导
 	IdleTimeout string `toml:"idle_timeout"` // 空闲超时，如 "15m"
+	Listen      string `toml:"listen"`       // "unix" 或 "tcp"，默认值平台相关
+	Host        string `toml:"host"`         // TCP 主机地址（仅 TCP 模式有效）
+	Port        int    `toml:"port"`         // TCP 端口（仅 TCP 模式有效）；0=随机端口
 }
 
 // SchemeConfig 输入方案配置
@@ -60,6 +64,14 @@ type UserDictConfig struct {
 	NewWordWeight int     `toml:"new_word_weight"` // 新自造词初始权重
 }
 
+// defaultListen 返回平台相关的默认监听类型。
+func defaultListen() string {
+	if runtime.GOOS == "windows" {
+		return "tcp"
+	}
+	return "unix"
+}
+
 // Default 返回带默认值的配置
 func Default() *Config {
 	home := homeDir()
@@ -68,6 +80,9 @@ func Default() *Config {
 			LogLevel:    "info",
 			SocketPath:  "",
 			IdleTimeout: "15m",
+			Listen:      defaultListen(),
+			Host:        "127.0.0.1",
+			Port:        11527,
 		},
 		Scheme: SchemeConfig{
 			Active: "xiaohe",
