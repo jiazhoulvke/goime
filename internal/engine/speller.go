@@ -10,8 +10,6 @@ type Speller interface {
 var xiaoheLookup = map[string][]string{
 	// a
 	"aa": {"a"},
-	// zero-initial a series
-	"ad": {"ai"}, "aj": {"an"}, "ah": {"ang"}, "ak": {"ao"},
 	// b - ba series
 	"ba": {"ba"}, "bd": {"bai"}, "bj": {"ban"}, "bh": {"bang"}, "bk": {"bao"},
 	"bw": {"bei"}, "bf": {"ben"}, "bg": {"beng"},
@@ -30,7 +28,7 @@ var xiaoheLookup = map[string][]string{
 	"ds": {"dong"}, "dz": {"dou"},
 	"du": {"du"}, "dr": {"duan"}, "dv": {"dui"}, "do": {"duo"},
 	// e - zero-initial
-	"ee": {"e"}, "ew": {"ei"}, "eb": {"en"}, "eg": {"eng"}, "er": {"er"},
+	"ee": {"e"}, "ew": {"ei"}, "eg": {"eng"}, "er": {"er"},
 	// f - fa series
 	"fa": {"fa"}, "fj": {"fan"}, "fh": {"fang"}, "fk": {"fao"},
 	"fw": {"fei"}, "ff": {"fen"}, "fg": {"feng"},
