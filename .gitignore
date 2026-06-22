@@ -1,7 +1,10 @@
 *.swp
 /goimed
+/goimed.exe
 /goime-dict
+/goime-dict.exe
 /goimec
+/goimec.exe
 .cache/
 .user_dict.*
 dist/
