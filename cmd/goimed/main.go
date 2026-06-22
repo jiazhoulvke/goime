@@ -17,6 +17,7 @@ import (
 func main() {
 	configPath := flag.String("config", "", "Path to config (default: ~/.config/goime/goime.toml)")
 	listenFlag := flag.String("listen", "", "Override listen type (unix/tcp)")
+	hostFlag := flag.String("host", "", "Override TCP host (default 127.0.0.1)")
 	portFlag := flag.Int("port", -1, "Override TCP port (0=random)")
 	flag.Parse()
 
@@ -54,6 +55,9 @@ func main() {
 	// 命令行参数覆盖配置
 	if *listenFlag != "" {
 		cfg.General.Listen = *listenFlag
+	}
+	if *hostFlag != "" {
+		cfg.General.Host = *hostFlag
 	}
 	if *portFlag >= 0 {
 		cfg.General.Port = *portFlag
