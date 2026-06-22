@@ -15,6 +15,12 @@ func TestSpellerXiaohe(t *testing.T) {
         {"ni", []string{"ni"}},
         {"hf", []string{"hen"}},
         {"ji", []string{"ji"}},
+        {"yc", []string{"yao"}},  // y + iao = yao
+        {"ad", []string{"ai"}},   // zero-initial ai
+        {"aj", []string{"an"}},   // zero-initial an
+        {"ee", []string{"e"}},    // zero-initial e
+        {"eg", []string{"eng"}},  // zero-initial eng
+        {"oo", []string{"o"}},    // zero-initial o
         {"", nil},
     }
     for _, tc := range tests {
