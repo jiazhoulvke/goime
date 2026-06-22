@@ -29,6 +29,7 @@ type Server struct {
 	sessions   map[net.Conn]*Session
 	lastActive time.Time
 	closed     chan struct{}
+	closeOnce  sync.Once
 }
 
 // New 创建服务器
@@ -98,28 +99,50 @@ func (s *Server) Listen() error {
 
 // Close 关闭服务器
 func (s *Server) Close() error {
-	close(s.closed)
-	if s.ln != nil {
-		s.ln.Close()
-	}
-	if s.cfg.General.Listen != "tcp" {
-		socketPath := s.cfg.SocketPath()
-		if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
-			return err
+	var err error
+	s.closeOnce.Do(func() {
+		close(s.closed)
+		if s.ln != nil {
+			s.ln.Close()
 		}
-	}
-	return nil
+		// 关闭所有活跃连接
+		s.mu.Lock()
+		for conn := range s.sessions {
+			conn.Close()
+		}
+		s.mu.Unlock()
+		// 清理 socket 或端口文件
+		if s.cfg.General.Listen == "tcp" {
+			if err2 := transport.RemovePortFile(); err2 != nil {
+				slog.Warn("remove port file failed", "error", err2)
+			}
+		} else {
+			socketPath := s.cfg.SocketPath()
+			if err2 := os.Remove(socketPath); err2 != nil && !os.IsNotExist(err2) {
+				err = err2
+			}
+		}
+	})
+	return err
 }
 
 // handleConn 处理单个客户端连接
 func (s *Server) handleConn(conn net.Conn, session *Session) {
-	defer func() {
-		conn.Close()
-		s.mu.Lock()
-		delete(s.sessions, conn)
-		s.translator.CommitSelections(s.cfg.UserDict.NewWordWeight)
-		s.mu.Unlock()
-	}()
+    defer func() {
+        conn.Close()
+        s.mu.Lock()
+        delete(s.sessions, conn)
+        // 将 session 的选词历史提交到用户词库
+        sels := session.Selections()
+        if len(sels) > 0 {
+            engineSels := make([]engine.Selection, len(sels))
+            for i, sel := range sels {
+                engineSels[i] = engine.Selection{Pinyin: sel.Pinyin, Word: sel.Word}
+            }
+            s.translator.CommitSelections(engineSels, s.cfg.UserDict.NewWordWeight)
+        }
+        s.mu.Unlock()
+    }()
 
 	decoder := json.NewDecoder(conn)
 	for {
@@ -198,7 +221,6 @@ func (s *Server) handleRequest(req protocol.Request, session *Session) []protoco
 	case "enter":
 		text := session.Buffer()
 		session.Reset()
-		s.translator.ClearSelections()
 		if text == "" {
 			return []protocol.Response{protocol.NewIdle()}
 		}
@@ -206,7 +228,6 @@ func (s *Server) handleRequest(req protocol.Request, session *Session) []protoco
 
 	case "escape":
 		session.Reset()
-		s.translator.ClearSelections()
 		return []protocol.Response{protocol.NewIdle()}
 
 	case "backspace":
@@ -231,7 +252,6 @@ func (s *Server) handleRequest(req protocol.Request, session *Session) []protoco
 	case "commit_preedit":
 		text := session.Buffer()
 		session.Reset()
-		s.translator.ClearSelections()
 		return []protocol.Response{protocol.NewCommit(text, "")}
 
 	case "set_scheme":
@@ -289,7 +309,6 @@ func (s *Server) handleSelect(session *Session, index int) []protocol.Response {
 	if index < 0 || index >= len(candidates) {
 		text := session.Buffer()
 		session.Reset()
-		s.translator.ClearSelections()
 		if text == "" {
 			return []protocol.Response{protocol.NewIdle()}
 		}
@@ -298,7 +317,6 @@ func (s *Server) handleSelect(session *Session, index int) []protocol.Response {
 
 	selected := candidates[index]
 	session.AppendSelection(selected.Pinyin, selected.Text)
-	s.translator.AppendSelection(selected.Pinyin, selected.Text)
 
 	consumed := selected.ConsumedChars
 	buf := session.Buffer()
@@ -311,7 +329,16 @@ func (s *Server) handleSelect(session *Session, index int) []protocol.Response {
 
 	if remain == "" {
 		session.Clear()
-		s.translator.CommitSelections(s.cfg.UserDict.NewWordWeight)
+		// 提交 session 的选词历史到用户词库
+		sels := session.Selections()
+		if len(sels) > 0 {
+			engineSels := make([]engine.Selection, len(sels))
+			for i, sel := range sels {
+				engineSels[i] = engine.Selection{Pinyin: sel.Pinyin, Word: sel.Word}
+			}
+			s.translator.CommitSelections(engineSels, s.cfg.UserDict.NewWordWeight)
+			session.ClearSelections()
+		}
 		return []protocol.Response{commitResp}
 	}
 

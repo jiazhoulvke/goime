@@ -5,6 +5,7 @@ package dict
 import (
 	"encoding/binary"
 	"fmt"
+	"log/slog"
 	"os"
 	"syscall"
 )
@@ -76,7 +77,9 @@ func mmapOpen(path string) (*Index, error) {
 // Close 释放 mmap 内存（Unix 需 munmap）
 func (idx *Index) Close() {
 	if idx.mapped != nil && idx.mmaped {
-		syscall.Munmap(idx.mapped)
+		if err := syscall.Munmap(idx.mapped); err != nil {
+			slog.Warn("munmap failed", "error", err)
+		}
 		idx.mapped = nil
 	}
 }

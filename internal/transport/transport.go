@@ -97,6 +97,11 @@ func ReadPortFile() (int, error) {
 	return port, nil
 }
 
+// RemovePortFile 删除端口文件（服务器关闭时调用）。
+func RemovePortFile() error {
+	return os.Remove(PortFilePath())
+}
+
 // RemoveSocket 删除 Unix socket 文件。
 func RemoveSocket(path string) error {
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {

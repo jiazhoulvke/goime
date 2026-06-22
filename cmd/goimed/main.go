@@ -67,12 +67,21 @@ func main() {
 
 	// 确保词库目录存在
 	buildDir := config.ExpandPath(cfg.Dict.BuildDir)
-	os.MkdirAll(buildDir, 0755)
+	if err := os.MkdirAll(buildDir, 0755); err != nil {
+		slog.Error("create build dir failed", "error", err, "path", buildDir)
+		os.Exit(1)
+	}
 	userDictDir := filepath.Dir(config.ExpandPath(cfg.Dict.User))
-	os.MkdirAll(userDictDir, 0755)
+	if err := os.MkdirAll(userDictDir, 0755); err != nil {
+		slog.Error("create user dict dir failed", "error", err, "path", userDictDir)
+		os.Exit(1)
+	}
 	if len(cfg.Dict.Static) > 0 {
 		staticDir := filepath.Dir(config.ExpandPath(cfg.Dict.Static[0]))
-		os.MkdirAll(staticDir, 0755)
+		if err := os.MkdirAll(staticDir, 0755); err != nil {
+			slog.Error("create static dict dir failed", "error", err, "path", staticDir)
+			os.Exit(1)
+		}
 	}
 
 	// 加载静态词库（合并所有）
@@ -94,33 +103,41 @@ func main() {
 				if err != nil || gi.Size() == 0 {
 					continue
 				}
-				sub, err := dict.Load(gp)
-				if err == nil {
-					idx.Merge(sub)
-					loaded = true
-					slog.Info("loaded dictionary", "path", gp)
-					break
-				}
+			sub, err := dict.Load(gp)
+			if err == nil {
+				idx.Merge(sub)
+				sub.Close()
+				loaded = true
+				slog.Info("loaded dictionary", "path", gp)
+				break
+			}
 			}
 			continue
 		}
 		dstPath := filepath.Join(buildDir, strings.TrimSuffix(filepath.Base(dictPath), filepath.Ext(dictPath))+".goime")
-		if cfg.Dict.AutoBuild {
-			dstInfo, err2 := os.Stat(dstPath)
-			if err2 != nil || srcInfo.ModTime().After(dstInfo.ModTime()) {
-				slog.Info("building dictionary", "src", dictPath, "dst", dstPath)
-				if err := dict.Build(dictPath, dstPath); err != nil {
-					slog.Error("build failed", "error", err)
-					os.Exit(1)
-				}
+	if cfg.Dict.AutoBuild {
+		needBuild := false
+		dstInfo, err2 := os.Stat(dstPath)
+		if err2 != nil {
+			needBuild = true
+		} else if srcInfo.ModTime().After(dstInfo.ModTime()) {
+			needBuild = true
+		}
+		if needBuild {
+			slog.Info("building dictionary", "src", dictPath, "dst", dstPath)
+			if err := dict.Build(dictPath, dstPath); err != nil {
+				slog.Error("build failed", "error", err)
+				os.Exit(1)
 			}
 		}
+	}
 		sub, err := dict.Load(dstPath)
 		if err != nil {
 			slog.Error("load failed", "error", err)
 			os.Exit(1)
 		}
 		idx.Merge(sub)
+		sub.Close()
 		loaded = true
 		slog.Info("loaded dictionary", "path", dstPath)
 	}
@@ -150,12 +167,13 @@ func main() {
 				return candidates[i].size > candidates[j].size
 			})
 			for _, cf := range candidates {
-				sub, err := dict.Load(cf.path)
-				if err == nil {
-					idx.Merge(sub)
-					loaded = true
-					slog.Info("loaded dictionary", "path", cf.path, "size", cf.size)
-				}
+			sub, err := dict.Load(cf.path)
+			if err == nil {
+				idx.Merge(sub)
+				sub.Close()
+				loaded = true
+				slog.Info("loaded dictionary", "path", cf.path, "size", cf.size)
+			}
 			}
 		}
 	}

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -72,6 +73,7 @@ func (ud *UserDict) AddUserWord(pinyin, word string, frequency int) error {
 func (ud *UserDict) GetUserWords(pinyin string) []Entry {
 	rows, err := ud.db.Query("SELECT pinyin, word, frequency FROM user_words WHERE pinyin = ?", pinyin)
 	if err != nil {
+		slog.Warn("GetUserWords query failed", "error", err, "pinyin", pinyin)
 		return nil
 	}
 	defer rows.Close()
@@ -80,6 +82,7 @@ func (ud *UserDict) GetUserWords(pinyin string) []Entry {
 	for rows.Next() {
 		var e Entry
 		if err := rows.Scan(&e.Pinyin, &e.Text, &e.Weight); err != nil {
+			slog.Warn("GetUserWords scan failed", "error", err)
 			return nil
 		}
 		entries = append(entries, e)
@@ -114,11 +117,12 @@ func (ud *UserDict) IncrementFreq(pinyin, word string) error {
 // in both word_freq and user_words tables.
 func (ud *UserDict) DecayAll(rate float64) {
 	for _, table := range []string{"word_freq", "user_words"} {
-		// CAST to INTEGER truncates (floor for positive values), matching expected decay behavior
-		ud.db.Exec(
+		if _, err := ud.db.Exec(
 			fmt.Sprintf("UPDATE %s SET frequency = CAST(frequency * ? AS INTEGER)", table),
 			rate,
-		)
+		); err != nil {
+			slog.Warn("DecayAll failed", "error", err, "table", table)
+		}
 	}
 }
 

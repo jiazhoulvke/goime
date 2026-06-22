@@ -1,6 +1,7 @@
 package engine
 
 import (
+    "log/slog"
     "sort"
 
     "github.com/jiazhoulvke/goime/internal/dict"
@@ -11,12 +12,6 @@ type Translator struct {
     static       *dict.Index
     user         *dict.UserDict
     maxSyllables int
-    selections   []selection
-}
-
-type selection struct {
-    Pinyin string
-    Word   string
 }
 
 // NewTranslator 创建 Translator
@@ -50,7 +45,10 @@ func (t *Translator) Query(syllables []string) []dict.Entry {
 
     addEntry := func(e dict.Entry, count int, pos int) {
         if t.user != nil {
-            freq, _ := t.user.GetFreq(e.Pinyin, e.Text)
+            freq, err := t.user.GetFreq(e.Pinyin, e.Text)
+            if err != nil {
+                slog.Warn("GetFreq failed", "error", err, "pinyin", e.Pinyin, "word", e.Text)
+            }
             e.Weight += freq
         }
         key := e.Pinyin + "\x00" + e.Text
@@ -109,33 +107,25 @@ func (t *Translator) Query(syllables []string) []dict.Entry {
     return out
 }
 
-// AppendSelection 追加选词历史（用于自造词）
-func (t *Translator) AppendSelection(pinyin, word string) {
-    t.selections = append(t.selections, selection{Pinyin: pinyin, Word: word})
-}
-
-// ClearSelections 清空选词历史
-func (t *Translator) ClearSelections() {
-    t.selections = nil
-}
-
-// Selections 获取当前选词历史
-func (t *Translator) Selections() []selection {
-    return t.selections
-}
-
 // CommitSelections 合并选词历史写入用户词库（仅包含多个词时生效）
-func (t *Translator) CommitSelections(weight int) {
-    if len(t.selections) < 2 || t.user == nil {
-        t.ClearSelections()
+// selections 来自 Session，避免跨 session 共享状态
+func (t *Translator) CommitSelections(selections []Selection, weight int) {
+    if len(selections) < 2 || t.user == nil {
         return
     }
     pinyin := ""
     word := ""
-    for _, s := range t.selections {
+    for _, s := range selections {
         pinyin += s.Pinyin
         word += s.Word
     }
-    t.user.AddUserWord(pinyin, word, weight)
-    t.ClearSelections()
+    if err := t.user.AddUserWord(pinyin, word, weight); err != nil {
+        slog.Warn("AddUserWord failed", "error", err, "pinyin", pinyin, "word", word)
+    }
+}
+
+// Selection 选词历史条目（供外部包使用）
+type Selection struct {
+    Pinyin string
+    Word   string
 }
