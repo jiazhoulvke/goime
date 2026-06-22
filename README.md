@@ -1,6 +1,6 @@
 # GoIME
 
-GoIME 是一个基于 Go 语言实现的服务端中文输入法引擎。通过 Unix Socket 对外提供服务，与 Vim/Neovim 等编辑器深度集成，完全脱离系统输入法框架即可输入中文。
+GoIME 是一个基于 Go 语言实现的服务端中文输入法引擎。通过 **Unix Socket** 或 **TCP** 对外提供服务，与 Vim/Neovim 等编辑器深度集成，完全脱离系统输入法框架即可输入中文。
 
 支持小鹤双拼和全拼两种输入方式。
 
@@ -8,15 +8,15 @@ GoIME 是一个基于 Go 语言实现的服务端中文输入法引擎。通过 
 
 ```mermaid
 flowchart TD
-    Socket["Unix Socket Listener"]
-    Session["Session Manager"]
+    Transport["Transport (Unix Socket / TCP)"]
+    Session["Session (per-connection state)"]
     Speller["Speller (双拼/全拼)"]
     Seg["Segmentor (分词)"]
     Trans["Translator"]
-    Static["Static Dict (mmap Trie)"]
+    Static["Static Dict (mmap Index)"]
     User["User Dict (SQLite)"]
 
-    Socket --> Session
+    Transport --> Session
     Session --> Speller
     Speller --> Seg --> Trans
     Trans --> Static
@@ -108,13 +108,19 @@ goimec uuru
 [general]
 # 日志级别：debug / info / warn / error
 log_level = "info"
+# 监听模式：unix（Unix Domain Socket）或 tcp（TCP 端口）
+listen = "unix"
+# 监听地址（TCP 模式）
+host = "127.0.0.1"
+# 监听端口（TCP 模式，0=随机端口，端口号写入 ~/.cache/goime/goime.port）
+port = 11527
 # Unix Socket 路径，留空自动推导
 socket_path = ""
 # 空闲超时，所有客户端断开后多久自动退出（0=永不退出）
 idle_timeout = "15m"
 
 [scheme]
-# 默认输入方案
+# 默认输入方案：xiaohe（小鹤双拼）或 fullpin（全拼）
 active = "xiaohe"
 
 [dict]
@@ -132,6 +138,20 @@ auto_build = true
 page_size = 5
 # 单次查询最多返回的候选词总数
 max_candidates = 100
+
+[user_dict]
+# 是否启用用户词库
+enabled = true
+# 新词初始权重
+new_word_weight = 100
+# 频率衰减
+freq_decay = true
+# 衰减率（每次启动将所有词频乘以该系数）
+decay_rate = 0.95
+
+[translator]
+# 多音节词组最大匹配长度
+max_syllables = 4
 ```
 
 ## 通信协议
