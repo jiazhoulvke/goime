@@ -48,7 +48,7 @@ func main() {
 		logLevel.Set(slog.LevelInfo)
 	}
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel})))
-	slog.Info("starting goimed", "socket", cfg.SocketPath())
+	slog.Info("starting goimed", "listen", cfg.General.Listen, "host", cfg.General.Host, "port", cfg.General.Port)
 
 	// 确保词库目录存在
 	buildDir := config.ExpandPath(cfg.Dict.BuildDir)

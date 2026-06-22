@@ -2,10 +2,10 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -13,6 +13,7 @@ import (
 	"github.com/jiazhoulvke/goime/internal/dict"
 	"github.com/jiazhoulvke/goime/internal/engine"
 	"github.com/jiazhoulvke/goime/internal/protocol"
+	"github.com/jiazhoulvke/goime/internal/transport"
 )
 
 // Server Unix Socket 服务器
@@ -50,24 +51,27 @@ func New(cfg *config.Config, static *dict.Index, user *dict.UserDict, schemes []
 	}, nil
 }
 
-// Listen 监听 Unix socket 并接受连接
+// Listen 根据配置创建监听器（Unix socket 或 TCP）并接受连接
 func (s *Server) Listen() error {
-	socketPath := s.cfg.SocketPath()
-	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("remove existing socket: %w", err)
-	}
-
-	ln, err := net.Listen("unix", socketPath)
+	ln, addr, err := transport.Listen(s.cfg)
 	if err != nil {
-		return fmt.Errorf("listen on %s: %w", socketPath, err)
-	}
-	if err := os.Chmod(socketPath, 0600); err != nil {
-		ln.Close()
-		return fmt.Errorf("chmod socket: %w", err)
+		return err
 	}
 	s.ln = ln
 
-	slog.Info("server listening", "socket", socketPath)
+	slog.Info("server listening", "addr", addr)
+
+	// 随机端口时写入端口文件
+	if s.cfg.General.Listen == "tcp" && s.cfg.General.Port == 0 {
+		_, portStr, err := net.SplitHostPort(addr)
+		if err == nil {
+			if port, err := strconv.Atoi(portStr); err == nil {
+				if err := transport.WritePortFile(port); err != nil {
+					slog.Warn("write port file failed", "error", err)
+				}
+			}
+		}
+	}
 
 	// 启动空闲超时监控
 	go s.idleLoop()
@@ -98,9 +102,11 @@ func (s *Server) Close() error {
 	if s.ln != nil {
 		s.ln.Close()
 	}
-	socketPath := s.cfg.SocketPath()
-	if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
-		return err
+	if s.cfg.General.Listen != "tcp" {
+		socketPath := s.cfg.SocketPath()
+		if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
+			return err
+		}
 	}
 	return nil
 }
