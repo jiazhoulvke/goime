@@ -11,10 +11,12 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/jiazhoulvke/goime/internal/protocol"
+	"github.com/jiazhoulvke/goime/internal/transport"
 )
 
 func main() {
 	socketFlag := flag.String("s", "", "Unix socket 路径（默认自动查找）")
+	addrFlag := flag.String("addr", "", "TCP 地址 (host:port)")
 	jsonOutput := flag.Bool("json", false, "JSON 格式输出（默认人类可读文本）")
 	selectIdx := flag.Int("select", -1, "选词索引（-1 表示只查看不选）")
 	flag.Parse()
@@ -26,8 +28,8 @@ func main() {
 	}
 	input := args[0]
 
-	// 连接 socket
-	conn := dialSocket(*socketFlag)
+	// 连接 goimed
+	conn := dialSocket(*socketFlag, *addrFlag)
 	defer conn.Close()
 
 	dec := json.NewDecoder(conn)
@@ -76,10 +78,21 @@ func main() {
 	}
 }
 
-// dialSocket 连接 goimed 的 Unix socket
-// 优先级：-s 参数 > 配置文件的 socket_path > 自动尝试候选路径
-func dialSocket(socketFlag string) net.Conn {
-	// 1. -s 参数优先级最高
+// dialSocket 连接 goimed 守护进程
+// 优先级：-addr 参数 > -s 参数 > 端口文件 > 配置文件的 socket_path > 自动尝试 Unix 候选路径
+func dialSocket(socketFlag, addrFlag string) net.Conn {
+	// 1. -addr 参数（TCP）
+	if addrFlag != "" {
+		conn, err := net.Dial("tcp", addrFlag)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: connect to %s: %v\n", addrFlag, err)
+			fmt.Fprintln(os.Stderr, "Is goimed running?")
+			os.Exit(1)
+		}
+		return conn
+	}
+
+	// 2. -s 参数（Unix socket）
 	if socketFlag != "" {
 		conn, err := net.Dial("unix", socketFlag)
 		if err != nil {
@@ -90,7 +103,16 @@ func dialSocket(socketFlag string) net.Conn {
 		return conn
 	}
 
-	// 2. 读取配置文件
+	// 3. 端口文件（TCP）
+	if port, err := transport.ReadPortFile(); err == nil {
+		addr := net.JoinHostPort("127.0.0.1", strconv.Itoa(port))
+		conn, err := net.Dial("tcp", addr)
+		if err == nil {
+			return conn
+		}
+	}
+
+	// 4. 读取配置文件中的 socket_path
 	cfgPath := configPath()
 	if sock := socketFromConfig(cfgPath); sock != "" {
 		conn, err := net.Dial("unix", sock)
@@ -99,7 +121,7 @@ func dialSocket(socketFlag string) net.Conn {
 		}
 	}
 
-	// 3. 自动尝试候选路径
+	// 5. 自动尝试 Unix 候选路径
 	for _, candidate := range candidatePaths() {
 		conn, err := net.Dial("unix", candidate)
 		if err == nil {
@@ -107,8 +129,12 @@ func dialSocket(socketFlag string) net.Conn {
 		}
 	}
 
+	// 全部失败
 	fmt.Fprintf(os.Stderr, "Error: cannot connect to goimed\n")
 	fmt.Fprintln(os.Stderr, "Tried: ")
+	if port, err := transport.ReadPortFile(); err == nil {
+		fmt.Fprintf(os.Stderr, "  (port file) 127.0.0.1:%d\n", port)
+	}
 	for _, p := range candidatePaths() {
 		fmt.Fprintf(os.Stderr, "  %s\n", p)
 	}
@@ -233,14 +259,17 @@ func printUsage() {
 
 Flags:
   -s string    Unix socket 路径（默认自动查找）
+  -addr string TCP 地址 (host:port)
   -json        JSON 格式输出
   -select int  选词索引（-1 表示只查看不选）
 
 连接优先级:
-  1. -s 参数
-  2. ~/.config/goime/goime.toml 中的 socket_path
-  3. 当前目录的 .goime.sock
-  4. $XDG_RUNTIME_DIR/goime.sock
-  5. $TMPDIR/goime-$UID.sock
-  6. /tmp/goime-$UID.sock`)
+  1. -addr 参数（TCP）
+  2. -s 参数（Unix socket）
+  3. 端口文件 ~/.cache/goime/goime.port（TCP，goimed --port=0 时生成）
+  4. ~/.config/goime/goime.toml 中的 socket_path
+  5. 当前目录的 .goime.sock
+  6. $XDG_RUNTIME_DIR/goime.sock
+  7. $TMPDIR/goime-$UID.sock
+  8. /tmp/goime-$UID.sock`)
 }
