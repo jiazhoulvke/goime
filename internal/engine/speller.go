@@ -129,6 +129,7 @@ var xiaoheLookup = map[string][]string{
 	"xv": {"xu"}, "xr": {"xuan"}, "xt": {"xue"},
 	// y - ya series
 	"ya": {"ya"}, "yj": {"yan"}, "yh": {"yang"}, "yk": {"yao"},
+	"yc": {"yao"},
 	"ye": {"ye"}, "yi": {"yi"},
 	"yl": {"yin"},
 	"yy": {"ying", "yun"}, "yo": {"yo"},
