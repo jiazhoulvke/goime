@@ -43,6 +43,7 @@ func TestIntegrationFullFlow(t *testing.T) {
 	defer user.Close()
 
 	cfg := config.Default()
+	cfg.General.Listen = "unix"
 	cfg.General.SocketPath = filepath.Join(dir, "goime.sock")
 
 	srv, err := server.New(cfg, idx, user, []string{"xiaohe", "fullpin"})

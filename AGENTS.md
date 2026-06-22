@@ -44,7 +44,7 @@ internal/
   dict/          — Dict Index (mmap lazy-load / in-memory merge), UserDict (SQLite), Rime import
   protocol/      — JSON request/response types (Request, Response, Candidate)
   pinyin/        — Valid-pinyin syllable table and validation
-  transport/     — *(planned)* Platform-agnostic IPC abstraction
+  transport/     — Listener/Dialer abstraction (Unix socket + TCP), PortFile helpers
 ```
 
 Flow: IPC (currently direct `net.Listen`) → Server → Session → Speller → Segmentor → Translator → Dict (static + user)
@@ -52,8 +52,12 @@ Flow: IPC (currently direct `net.Listen`) → Server → Session → Speller →
 ## Platform Support
 
 - **Linux / macOS / FreeBSD / OpenBSD**: Unix Domain Socket (default `/tmp/goime-$UID.sock` or `$XDG_RUNTIME_DIR/goime.sock`)
+- **Windows**: TCP mode by default (listen=tcp, host=127.0.0.1, port=11527); can also use Unix socket
+- **Listen modes**: Configure via `listen` field ("unix" or "tcp"): `host` and `port` for TCP; `socket_path` for Unix
+- **Port file**: When `port=0`, random port is written to `~/.cache/goime/goime.port` for clients to discover
 - **Dict mmap**: Unix uses `mmap` syscall (`mmap_unix.go`); Windows fallback uses `os.ReadFile` (`mmap_other.go`)
 - **Makefile**: Auto-detects `$(OS)` to append `.exe` extension on Windows
+- **Transport**: Abstracted in `internal/transport/` — `Listen()`, `Dial()`, PortFile helpers
 
 ## Conventions
 

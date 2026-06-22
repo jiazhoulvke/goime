@@ -33,6 +33,7 @@ func TestE2EPipeline(t *testing.T) {
 
 	// 2. 启动服务
 	cfg := config.Default()
+	cfg.General.Listen = "unix"
 	cfg.General.SocketPath = filepath.Join(dir, "goime.sock")
 	srv, _ := server.New(cfg, idx, nil, []string{"xiaohe", "fullpin"})
 	go srv.Listen()
