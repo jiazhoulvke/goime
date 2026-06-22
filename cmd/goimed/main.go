@@ -16,6 +16,8 @@ import (
 
 func main() {
 	configPath := flag.String("config", "", "Path to config (default: ~/.config/goime/goime.toml)")
+	listenFlag := flag.String("listen", "", "Override listen type (unix/tcp)")
+	portFlag := flag.Int("port", -1, "Override TCP port (0=random)")
 	flag.Parse()
 
 	var cfg *config.Config
@@ -48,6 +50,15 @@ func main() {
 		logLevel.Set(slog.LevelInfo)
 	}
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logLevel})))
+
+	// 命令行参数覆盖配置
+	if *listenFlag != "" {
+		cfg.General.Listen = *listenFlag
+	}
+	if *portFlag >= 0 {
+		cfg.General.Port = *portFlag
+	}
+
 	slog.Info("starting goimed", "listen", cfg.General.Listen, "host", cfg.General.Host, "port", cfg.General.Port)
 
 	// 确保词库目录存在
