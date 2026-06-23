@@ -71,17 +71,37 @@ go install github.com/jiazhoulvke/goime/cmd/goimec@latest
 
 从 [雾凇拼音](https://github.com/iDvel/rime-ice) 等来源获取词库，导入并编译：
 
+#### 克隆项目到本地
 ```bash
-# 导入 Rime 词库（自动检测格式）
-goime-dict import --rime ~/rime-ice/cn_dicts/*.dict.yaml
-
-# 输出：
-# → ~/.config/goime/dicts/base.dict.txt
-# → ~/.cache/goime/base.dict.goime
+git clone --depth=1 https://github.com/iDvel/rime-ice
 ```
 
-### 2. 启动服务
+#### 导入 Rime 词库（自动检测格式）
+```bash
+goime-dict import --rime rime-ice/cn_dicts/*.dict.yaml
+```
 
+输出：
+>  rime-ice/cn_dicts/8105.dict.yaml: 8610 entries
+>    → /home/jiazhoulvke/.config/goime/dicts/8105.dict.txt
+>    → /home/jiazhoulvke/.cache/goime/8105.dict.goime
+>  rime-ice/cn_dicts/41448.dict.yaml: 46014 entries
+>    → /home/jiazhoulvke/.config/goime/dicts/41448.dict.txt
+>    → /home/jiazhoulvke/.cache/goime/41448.dict.goime
+>  rime-ice/cn_dicts/base.dict.yaml: 542736 entries
+>    → /home/jiazhoulvke/.config/goime/dicts/base.dict.txt
+>    → /home/jiazhoulvke/.cache/goime/base.dict.goime
+>  rime-ice/cn_dicts/ext.dict.yaml: 339299 entries
+>    → /home/jiazhoulvke/.config/goime/dicts/ext.dict.txt
+>    → /home/jiazhoulvke/.cache/goime/ext.dict.goime
+>  rime-ice/cn_dicts/others.dict.yaml: 611 entries
+>    → /home/jiazhoulvke/.config/goime/dicts/others.dict.txt
+>    → /home/jiazhoulvke/.cache/goime/others.dict.goime
+>  rime-ice/cn_dicts/tencent.dict.yaml: 981803 entries
+>    → /home/jiazhoulvke/.config/goime/dicts/tencent.dict.txt
+>    → /home/jiazhoulvke/.cache/goime/tencent.dict.goime
+
+### 2. 启动服务
 ```bash
 goimed
 ```
@@ -90,10 +110,15 @@ goimed
 
 ```bash
 goimec uuru
-# 输入: uuru
-# 候选词 (页 1/14):
-#   →[0] 如      ru (权重:4308194)
 ```
+
+> 输入: ceui
+> 候选词 (页 1/19, 每页 5):
+>   →[0] 测试     ceshi (权重:500807)
+>    [1] 侧视     ceshi (权重:2540)
+>    [2] 侧室     ceshi (权重:1850)
+>    [3] 策士     ceshi (权重:955)
+>    [4] 测      ce (权重:288406)
 
 ### 4. 安装编辑器插件
 
