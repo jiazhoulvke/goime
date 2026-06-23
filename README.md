@@ -111,7 +111,7 @@ goimed
 ### 3. 连接测试
 
 ```bash
-goimec uuru
+goimec ceui
 ```
 ```text
 输入: ceui
@@ -250,13 +250,13 @@ goime-dict user import backup.txt user.db
 
 ```bash
 # 查看候选词
-goimec uuru
+goimec ceui
 
 # JSON 格式输出
 goimec -json ni
 
 # 选词上屏
-goimec -select 0 uuru
+goimec -select 0 ceui
 ```
 
 ## 构建
