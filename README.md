@@ -4,6 +4,8 @@ GoIME 是一个基于 Go 语言实现的服务端中文输入法引擎。通过 
 
 支持小鹤双拼和全拼两种输入方式。
 
+![demo](goime-demo.gif)
+
 ## 架构
 
 ```mermaid
