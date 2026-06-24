@@ -40,6 +40,8 @@ flowchart TD
 | `goime-<version>-darwin_amd64.tar.gz` | macOS | Intel |
 | `goime-<version>-darwin_arm64.tar.gz` | macOS | Apple Silicon |
 | `goime-<version>-freebsd_amd64.tar.gz` | FreeBSD | x86_64 |
+| `goime-<version>-openbsd_amd64.tar.gz` | OpenBSD | x86_64 |
+| `goime-<version>-openbsd_arm64.tar.gz` | OpenBSD | ARM64 |
 
 每个包内包含：
 
@@ -53,10 +55,10 @@ flowchart TD
 
 ```bash
 # 下载校验和文件
-curl -LO https://github.com/jiazhoulvke/goime/releases/download/v0.2.0/goime_v0.2.0_checksums.txt
+curl -LO https://github.com/jiazhoulvke/goime/releases/download/v0.8.0/goime_v0.8.0_checksums.txt
 
 # 验证压缩包
-sha256sum -c goime_v0.2.0_checksums.txt 2>/dev/null | grep OK
+sha256sum -c goime_v0.8.0_checksums.txt 2>/dev/null | grep OK
 ```
 
 ### 从源码安装
@@ -108,6 +110,11 @@ rime-ice/cn_dicts/tencent.dict.yaml: 981803 entries
 ### 2. 启动服务
 ```bash
 goimed
+
+# 也可用命令行参数覆盖配置：
+#   goimed -config /path/to/goime.toml  指定配置文件（默认 ~/.config/goime/goime.toml）
+#   goimed -listen tcp                   覆盖监听类型（unix/tcp）
+#   goimed -host 0.0.0.0 -port 11527    覆盖 TCP 地址
 ```
 
 ### 3. 连接测试
@@ -152,12 +159,16 @@ idle_timeout = "15m"
 [scheme]
 # 默认输入方案：xiaohe（小鹤双拼）或 fullpin（全拼）
 active = "xiaohe"
+# 方案文件目录
+dir = "~/.config/goime/schemes"
 
 [dict]
 # 静态词库源文件列表
 static = ["~/.config/goime/dicts/zhonghua.dict.txt"]
 # 用户词库 SQLite 路径
 user = "~/.config/goime/user_dict.db"
+# 用户词库纯文本同步文件
+sync_file = "~/.config/goime/user_dict.txt"
 # 词库二进制索引构建目录
 build_dir = "~/.cache/goime/"
 # 自动构建开关
@@ -177,11 +188,11 @@ new_word_weight = 100
 # 频率衰减
 freq_decay = true
 # 衰减率（每次启动将所有词频乘以该系数）
-decay_rate = 0.95
+decay_rate = 0.99
 
 [translator]
 # 多音节词组最大匹配长度
-max_syllables = 4
+max_syllables = 8
 ```
 
 ## 通信协议
@@ -227,6 +238,7 @@ max_syllables = 4
 | `arrow` | `dir` | 方向键翻页 |
 | `page` | `dir` | 翻页 |
 | `set_scheme` | `name` | 切换输入方案 |
+| `commit_preedit` | — | 提交当前预编辑内容并清空缓冲区 |
 | `config` | `page_size`, `schemes` | 更新配置 |
 
 ## 命令行工具
@@ -234,24 +246,31 @@ max_syllables = 4
 ### goime-dict
 
 ```bash
-# 编译词库
+# 编译词库（纯文本格式）
 goime-dict build dict.txt dict.goime
 
-# 导入 Rime 词库并编译
+# 编译 Rime 词库
+goime-dict build --rime a.dict.yaml a.goime
+
+# 导入 Rime 词库并编译（自动生成 .dict.txt 和 .goime）
 goime-dict import --rime a.dict.yaml b.dict.yaml
+
+# 导入时指定输出目录
+goime-dict import --rime --dir ./build --dict-dir ./dicts *.dict.yaml
 
 # 合并多个词库为一个
 goime-dict merge a.txt b.txt -o merged.goime
 
-# 管理用户词库
-goime-dict user export user.db backup.txt
-goime-dict user import backup.txt user.db
+# 管理用户词库（--db 指定路径，默认 ~/.config/goime/user_dict.db）
+goime-dict user export backup.txt
+goime-dict user import backup.txt
+goime-dict user export backup.txt --db /path/to/user.db
 ```
 
 ### goimec
 
 ```bash
-# 查看候选词
+# 查看候选词（自动连接 goimed）
 goimec ceui
 
 # JSON 格式输出
@@ -259,6 +278,12 @@ goimec -json ni
 
 # 选词上屏
 goimec -select 0 ceui
+
+# 指定 Unix socket 路径
+goimec -s /tmp/goime.sock ceui
+
+# 通过 TCP 连接
+goimec -addr 127.0.0.1:11527 ceui
 ```
 
 ## 构建
@@ -271,7 +296,7 @@ make clean     # 清理编译产物
 
 ## 性能目标
 
-| 指标 | 实测 | 条件 |
+| 指标 | 参考值（非严格基准） | 条件 |
 |------|------|------|
 | 词库加载（base 19MB / 54万条） | ~86ms | mmap + key scan |
 | 词库加载（8105 77KB） | ~0.08ms | mmap |
